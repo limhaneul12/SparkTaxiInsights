@@ -20,11 +20,10 @@ class TaxiDateTimeGroupbyAndAverageMile(FileLoadInParquet):
             .appName("TripAnaliysis")
             .config("spark.excutor.memory", MAX_MEMORY)
             .config("spark.driver.memory", MAX_MEMORY)
-            .config("spark.streaming.stopGracefullyOnShutdown", "true")
-            .config("spark.sql.execution.arrow.pyspark.enabled", "true")
             .config("spark.sql.adaptive.enabled", "true")
-            .config("spark.executor.cores", "2")
-            .config("spark.cores.max", "16")
+            .config("spark.executor.cores", "8")
+            .config("spark.cores.max", "8")
+            .config("spark.sql.execution.arrow.pyspark.enabled", "true")
             .config("spark.shuffle.service.enabled", "true")
             .config("spark.dynamicAllocation.enabled", "true")
             .getOrCreate()
@@ -73,9 +72,7 @@ class TaxiDateTimeGroupbyAndAverageMile(FileLoadInParquet):
                 col("trip_miles"),
             )
             .groupBy("pickup")
-            .agg(
-                F.avg("trip_miles").name("average_miles"),
-            )
+            .agg(F.avg("trip_miles").name("average_miles"))
         )
 
     def taxi_datetime_type(self, datetime_type: str, alias: str) -> DataFrame:
@@ -142,4 +139,4 @@ class SparkPreprocessingPandasChange(TaxiDateTimeGroupbyAndAverageMile):
 
 if __name__ == "__main__":
     for data in range(2019, 2025):
-        SparkPreprocessingPandasChange(data).week_data_rtd()
+        SparkPreprocessingPandasChange(data).save_processed_data()

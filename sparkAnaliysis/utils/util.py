@@ -9,9 +9,9 @@ class FileLoadInParquet:
         self.year = year
 
     def parquet_file_all(self) -> str:
-        return str(Path(os.getcwd()).joinpath(f"data/{str(self.year)}"))
+        return str(Path(__file__).parent.parent.joinpath(f"data/{str(self.year)}"))
 
-    def read_parquet_data(self, spark: SparkSession) -> list[DataFrame]:
+    def read_parquet_data(self, spark: SparkSession) -> DataFrame:
         # 파케이 파일 경로
-        data = self.parquet_file_all()
+        data: str = self.parquet_file_all()
         return spark.read.parquet(f"file:///{data}/*")

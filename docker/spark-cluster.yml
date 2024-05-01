@@ -27,9 +27,10 @@ services:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
       - SPARK_MASTER_WEBUI_PORT=8081
-      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_CORES=8
       - SPARK_WORKER_MEMORY=8g
       - SPARK_WORKER_WEBUI_PORT=8082
+      - SPARK_WORKER_INSTANCES=3
     ports:
       - "8082:8082"
     depends_on:
@@ -42,10 +43,11 @@ services:
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
-      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_CORES=8
       - SPARK_WORKER_MEMORY=8g
       - SPARK_MASTER_WEBUI_PORT=8081
       - SPARK_WORKER_WEBUI_PORT=8084
+      - SPARK_WORKER_INSTANCES=3
     ports:
       - "8084:8084"
     depends_on:
@@ -58,10 +60,11 @@ services:
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
-      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_CORES=8
       - SPARK_WORKER_MEMORY=8g
       - SPARK_MASTER_WEBUI_PORT=8081
       - SPARK_WORKER_WEBUI_PORT=8085
+      - SPARK_WORKER_INSTANCES=3
     ports:
       - "8085:8085"
     depends_on:
@@ -69,21 +72,7 @@ services:
     networks:
       - spark-network
 
-  spark-worker-4:
-    image: bitnami/spark:3.3.2
-    environment:
-      - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark-master:7077
-      - SPARK_WORKER_CORES=2
-      - SPARK_WORKER_MEMORY=8g
-      - SPARK_MASTER_WEBUI_PORT=8081
-      - SPARK_WORKER_WEBUI_PORT=8086
-    ports:
-      - "8086:8086"
-    depends_on:
-      - spark-master
-    networks:
-      - spark-network
+  
   
 networks:
   spark-network:
