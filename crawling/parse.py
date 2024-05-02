@@ -57,16 +57,20 @@ def div_tag_answers_element_collect(
     )
 
 
-def a_tag_download_link(e: BeautifulSoup):
+def a_tag_download_link(e: BeautifulSoup) -> list[str]:
+    """href 데이터 뭉치 div_tag_answers_element_collect method 에서 추출"""
     return [data["href"] for data in e]
-
-
-# <a class="exitlink" href="https://d37ci6vzurychx.cloudfront.net/trip-data/fhvhv_tripdata_2019-02.parquet" t
-# itle="High Volume For-Hire Vehicle Trip Records">High Volume For-Hire Vehicle Trip Records</a>
 
 
 class FileFolderMakeUtil:
     def __init__(self, taxi_type: str, start_year: int, end_year: int) -> None:
+        """폴더 생성할 클래스
+
+        Args:
+            taxi_type (str): 택시 유형
+            start_year (int): 시작 년도
+            end_year (int): 끝 년도
+        """
         self.taxi_type = taxi_type
         self.start_year = start_year
         self.end_year = end_year
@@ -81,6 +85,7 @@ class FileFolderMakeUtil:
         return file_name.split("/")[4]
 
     def create_folder(self) -> None:
+        """폴더 생성"""
         try:
             for data in range(self.start_year, self.end_year + 1):
                 os.makedirs(
@@ -96,32 +101,81 @@ class FileFolderMakeUtil:
 
 class AllTaxiDataDownloadIn(FileFolderMakeUtil):
     def __init__(self, taxi_type: str, start_year: int, end_year: int) -> None:
+        """데이터 다운로드 클래스
+
+        시작 큐 -> 준비큐 -> 다운로드
+
+        Args:
+            taxi_type (str): 택시 유형
+            start_year (int): 시작 년도
+            end_year (int): 끝 년도
+        """
         super().__init__(taxi_type, start_year, end_year)
         self.bs = BeautifulSoup(gd().page(), "lxml")
         self.starting_queue = deque()
         self.ready_queue = deque()
-        self.download_quq = deque()
         if self.bs is None:
             return
 
     def year_href_collect(self, order: int) -> list[str]:
+        """각 년도 별 element 추출 요소
+
+        Args:
+            order (int) : 시작 년도
+        return:
+            - list["a 태그로 감싸져 있는 요소들"]
+
+        """
         return div_tag_answers_element_collect(self.bs, order, self.taxi_type)
 
     def starting_injection(self) -> None:
+        """준비큐 에 각 년도마다 a태그 요소 넣기"""
         for data in range(self.start_year, self.end_year + 1):
-            self.starting_queue.append(self.year_href_collect(data))
+            self.starting_queue.append({data: self.year_href_collect(data)})
 
-    def element_preprocessing(self):
-        self.starting_injection()
-        for data in self.starting_queue:
-            self.ready_queue.append(a_tag_download_link(data))
+    def data_pop_list_injection(
+        self, data_q: deque, target: deque
+    ) -> list[dict[int, list[str]]]:
+        """각 큐의 작업 과정 통일
 
-    def ready_for_down(self):
-        self.element_preprocessing()
-        for year in range(self.start_year, self.end_year + 1):
-            logging.info(f"{year}년도 에 접근합니다")
-            while self.ready_queue:
-                for data in self.ready_queue.popleft():
+        Args:
+            data_q (deque): 시작 큐
+            target (deque): 타켓 큐
+
+        Returns:
+            _type_: [{2019: [다운로드링크]}]
+        """
+        data_q
+
+        data: list[dict[int, list[str]]] = []
+        while target:
+            item: dict[int, list[str]] = target.popleft()
+            if isinstance(item, dict):
+                for y_data, link in item.items():
+                    data.append({y_data: link})
+        return data
+
+    def element_preprocessing(self) -> None:
+        data: list[dict[int, list[str]]] = self.data_pop_list_injection(
+            self.starting_injection(), self.starting_queue
+        )
+        for _, data in enumerate(data):
+            data_partition: dict[int, list[str]] = {
+                list(data.keys())[0]: a_tag_download_link(
+                    data for data in list(data.values())[0]
+                )
+            }
+            self.ready_queue.append(data_partition)
+
+    def ready_for_down(self) -> None:
+        """파일 다운로드하여 폴더에 저장"""
+        data: list[dict[int, list[str]]] = self.data_pop_list_injection(
+            self.element_preprocessing(), self.ready_queue
+        )
+        for element in (down for down in data):
+            logging.info(f"{list(element)}년 접근 시도")
+            for year, links in element.items():
+                for data in links:
                     logging.info(f"{data} 다운로드 시도")
                     urlretrieve(
                         data,
