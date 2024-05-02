@@ -156,6 +156,7 @@ class AllTaxiDataDownloadIn(FileFolderMakeUtil):
         return data
 
     def element_preprocessing(self) -> None:
+        """a 태그 뽑아내어 레디큐에 넣기"""
         data: list[dict[int, list[str]]] = self.data_pop_list_injection(
             self.starting_injection(), self.starting_queue
         )
@@ -183,6 +184,7 @@ class AllTaxiDataDownloadIn(FileFolderMakeUtil):
                     )
 
     def start(self) -> None:
+        """크롤링 시작"""
         if self.create_folder():  # 폴더 생성 메서드의 반환값 확인
             self.ready_for_down()
             if len(self.starting_queue) == 0 and len(self.ready_queue) == 0:
