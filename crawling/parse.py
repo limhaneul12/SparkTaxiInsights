@@ -8,10 +8,15 @@ import logging
 from typing import Final
 from collections import deque
 
+import urllib3
 from urllib.request import urlretrieve
 from bs4 import BeautifulSoup
 from page_source import GoogleUtilityDriver as gd
 from concurrent.futures import ThreadPoolExecutor
+
+
+# 경로 설정
+PATH: Final[str] = f"{pathlib.Path(__file__).parent.parent}/sparkAnaliysis/data"
 
 
 def div_tag_faq20_element(e: BeautifulSoup, year: int) -> list[str]:
@@ -59,10 +64,6 @@ class FileFolderMakeUtil:
             start_year (int): 시작 년도
             end_year (int): 끝 년도
         """
-        self.path = Final[str] = (
-            f"{pathlib.Path(__file__).parent.parent}/sparkAnaliysis/data"
-        )
-
         self.taxi_type = taxi_type
         self.start_year = start_year
         self.end_year = end_year
@@ -81,7 +82,7 @@ class FileFolderMakeUtil:
         try:
             for data in range(self.start_year, self.end_year + 1):
                 os.makedirs(
-                    f"{self.path}/{self.folder_name_extraction()}/{data}",
+                    f"{PATH}/{self.folder_name_extraction()}/{data}",
                     exist_ok=True,
                 )
             self.success = True  # 폴더 생성 성공
@@ -130,11 +131,12 @@ class AllTaxiDataDownloadIn(FileFolderMakeUtil):
         while self._ready_queue:
             item: dict[int, list[str]] = self._ready_queue.popleft()
             for year, links in item.items():
+                logging.info(f"{year} 다운로드 시도")
                 for data in links:
                     logging.info(f"{data} 다운로드 시도")
                     urlretrieve(
                         data,
-                        f"{self.path}/{self.folder_name_extraction()}/{year}/{self.file_name_extraction(data)}",
+                        f"{PATH}/{self.folder_name_extraction()}/{year}/{self.file_name_extraction(data)}",
                     )
 
     def start(self) -> None:
