@@ -8,22 +8,10 @@ import logging
 from typing import Final
 from collections import deque
 
-import urllib3
 from urllib.request import urlretrieve
 from bs4 import BeautifulSoup
 from page_source import GoogleUtilityDriver as gd
 from concurrent.futures import ThreadPoolExecutor
-
-
-urllib3.PoolManager(num_pools=2)
-# 경로 설정
-PATH: Final[str] = f"{pathlib.Path(__file__).parent.parent}/sparkAnaliysis/data"
-
-# 파일 생성
-try:
-    os.mkdir(f"{PATH}")
-except FileExistsError:
-    logging.info(f"이미 메인 파일이 존재합니다.")
 
 
 def div_tag_faq20_element(e: BeautifulSoup, year: int) -> list[str]:
@@ -71,6 +59,10 @@ class FileFolderMakeUtil:
             start_year (int): 시작 년도
             end_year (int): 끝 년도
         """
+        self.path = Final[str] = (
+            f"{pathlib.Path(__file__).parent.parent}/sparkAnaliysis/data"
+        )
+
         self.taxi_type = taxi_type
         self.start_year = start_year
         self.end_year = end_year
@@ -89,7 +81,7 @@ class FileFolderMakeUtil:
         try:
             for data in range(self.start_year, self.end_year + 1):
                 os.makedirs(
-                    f"{PATH}/{self.folder_name_extraction()}/{data}",
+                    f"{self.path}/{self.folder_name_extraction()}/{data}",
                     exist_ok=True,
                 )
             self.success = True  # 폴더 생성 성공
@@ -142,11 +134,11 @@ class AllTaxiDataDownloadIn(FileFolderMakeUtil):
                     logging.info(f"{data} 다운로드 시도")
                     urlretrieve(
                         data,
-                        f"{PATH}/{self.folder_name_extraction()}/{year}/{self.file_name_extraction(data)}",
+                        f"{self.path}/{self.folder_name_extraction()}/{year}/{self.file_name_extraction(data)}",
                     )
 
     def start(self) -> None:
-        """크롤"""
+        """크롤링 시작"""
         if self.create_folder():  # 폴더 생성 메서드의 반환값 확인
             self.__element_preprocessing()
             self.ready_for_down()
@@ -157,7 +149,6 @@ class AllTaxiDataDownloadIn(FileFolderMakeUtil):
 
 
 if __name__ == "__main__":
-
     high = "High Volume For-Hire Vehicle Trip Records"
     yellow = "Yellow Taxi Trip Records"
 
