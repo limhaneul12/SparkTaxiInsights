@@ -12,11 +12,12 @@ import urllib3
 from urllib.request import urlretrieve
 from bs4 import BeautifulSoup
 from page_source import GoogleUtilityDriver as gd
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 
 
 # 경로 설정
 PATH: Final[str] = f"{pathlib.Path(__file__).parent.parent}/sparkAnaliysis/data"
+urllib3.PoolManager(num_pools=4, max_size=10)
 
 
 def div_tag_faq20_element(e: BeautifulSoup, year: int) -> list[str]:
@@ -131,7 +132,7 @@ class AllTaxiDataDownloadIn(FileFolderMakeUtil):
         while self._ready_queue:
             item: dict[int, list[str]] = self._ready_queue.popleft()
             for year, links in item.items():
-                logging.info(f"{year} 다운로드 시도")
+                logging.info(f"{year} 접근 시도")
                 for data in links:
                     logging.info(f"{data} 다운로드 시도")
                     urlretrieve(
@@ -150,16 +151,18 @@ class AllTaxiDataDownloadIn(FileFolderMakeUtil):
             logging.error("폴더 생성 실패로 인해 작업을 중지합니다.")
 
 
+def high_volume(texi_type: str, start: int, end: int) -> None:
+    return AllTaxiDataDownloadIn(texi_type, start, end).start()
+
+
 if __name__ == "__main__":
     high = "High Volume For-Hire Vehicle Trip Records"
     yellow = "Yellow Taxi Trip Records"
+    green = "Green Taxi Trip Records"
+    for_hire = "For-Hire Vehicle Trip Records"
 
-    def high_volume() -> None:
-        return AllTaxiDataDownloadIn(high, 2019, 2024).start()
-
-    def yello_volume() -> None:
-        return AllTaxiDataDownloadIn(yellow, 2009, 2024).start()
-
-    with ThreadPoolExecutor(2) as pool:
-        pool.submit(high_volume)
-        pool.submit(yello_volume)
+    with ProcessPoolExecutor(4) as pool:
+        pool.submit(high_volume, high, 2019, 2024)
+        pool.submit(high_volume, yellow, 2009, 2024)
+        pool.submit(high_volume, green, 2014, 2024)
+        pool.submit(high_volume, for_hire, 2015, 2024)
