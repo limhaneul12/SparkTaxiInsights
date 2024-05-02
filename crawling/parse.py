@@ -112,8 +112,7 @@ class AllTaxiDataDownloadIn(FileFolderMakeUtil):
         """
         super().__init__(taxi_type, start_year, end_year)
         self.bs = BeautifulSoup(gd().page(), "lxml")
-        self.starting_queue = deque()
-        self.ready_queue = deque()
+        self._ready_queue = deque()
         if self.bs is None:
             return
 
@@ -128,54 +127,17 @@ class AllTaxiDataDownloadIn(FileFolderMakeUtil):
         """
         return div_tag_answers_element_collect(self.bs, order, self.taxi_type)
 
-    def starting_injection(self) -> None:
-        """준비큐 에 각 년도마다 a태그 요소 넣기"""
-        for data in range(self.start_year, self.end_year + 1):
-            self.starting_queue.append({data: self.year_href_collect(data)})
-
-    def data_pop_list_injection(
-        self, data_q: deque, target: deque
-    ) -> list[dict[int, list[str]]]:
-        """각 큐의 작업 과정 통일
-
-        Args:
-            data_q (deque): 시작 큐
-            target (deque): 타켓 큐
-
-        Returns:
-            _type_: [{2019: [다운로드링크]}]
-        """
-        data_q
-
-        data: list[dict[int, list[str]]] = []
-        while target:
-            item: dict[int, list[str]] = target.popleft()
-            if isinstance(item, dict):
-                for y_data, link in item.items():
-                    data.append({y_data: link})
-        return data
-
-    def element_preprocessing(self) -> None:
+    def __element_preprocessing(self) -> None:
         """a 태그 뽑아내어 레디큐에 넣기"""
-        data: list[dict[int, list[str]]] = self.data_pop_list_injection(
-            self.starting_injection(), self.starting_queue
-        )
-        for _, data in enumerate(data):
-            data_partition: dict[int, list[str]] = {
-                list(data.keys())[0]: a_tag_download_link(
-                    data for data in list(data.values())[0]
-                )
-            }
-            self.ready_queue.append(data_partition)
+        for data in range(self.start_year, self.end_year + 1):
+            year_links = self.year_href_collect(data)
+            self._ready_queue.append({data: a_tag_download_link(year_links)})
 
     def ready_for_down(self) -> None:
         """파일 다운로드하여 폴더에 저장"""
-        data: list[dict[int, list[str]]] = self.data_pop_list_injection(
-            self.element_preprocessing(), self.ready_queue
-        )
-        for element in (down for down in data):
-            logging.info(f"{list(element)}년 접근 시도")
-            for year, links in element.items():
+        while self._ready_queue:
+            item: dict[int, list[str]] = self._ready_queue.popleft()
+            for year, links in item.items():
                 for data in links:
                     logging.info(f"{data} 다운로드 시도")
                     urlretrieve(
@@ -184,10 +146,11 @@ class AllTaxiDataDownloadIn(FileFolderMakeUtil):
                     )
 
     def start(self) -> None:
-        """크롤링 시작"""
+        """크롤"""
         if self.create_folder():  # 폴더 생성 메서드의 반환값 확인
+            self.__element_preprocessing()
             self.ready_for_down()
-            if len(self.starting_queue) == 0 and len(self.ready_queue) == 0:
+            if not self._ready_queue:
                 exit(0)
         else:
             logging.error("폴더 생성 실패로 인해 작업을 중지합니다.")
