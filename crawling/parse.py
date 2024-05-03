@@ -3,6 +3,7 @@
 """
 
 import os
+import time
 import pathlib
 import logging
 from typing import Final
@@ -57,7 +58,7 @@ def a_tag_download_link(e: BeautifulSoup) -> list[str]:
     return [data["href"] for data in e]
 
 
-class FileFolderMakeUtil:
+class __FileFolderMakeUtil:
     def __init__(self, taxi_type: str, start_year: int, end_year: int) -> None:
         """폴더 생성할 클래스
 
@@ -70,12 +71,12 @@ class FileFolderMakeUtil:
         self.start_year = start_year
         self.end_year = end_year
 
-    def folder_name_extraction(self) -> str:
+    def __folder_name_extraction(self) -> str:
         """폴더 이름 추출"""
         string_data: list[str] = self.taxi_type.split(" ")[:2]
         return " ".join(string_data).replace(" ", "")
 
-    def file_name_extraction(self, file_name: str) -> str:
+    def __file_name_extraction(self, file_name: str) -> str:
         """파일 이름 추출"""
         return file_name.split("/")[4]
 
@@ -84,7 +85,7 @@ class FileFolderMakeUtil:
         try:
             for data in range(self.start_year, self.end_year + 1):
                 os.makedirs(
-                    f"{PATH}/{self.folder_name_extraction()}/{data}",
+                    f"{PATH}/{self.__folder_name_extraction()}/{data}",
                     exist_ok=True,
                 )
             self.success = True  # 폴더 생성 성공
@@ -93,12 +94,24 @@ class FileFolderMakeUtil:
             self.success = False  # 폴더 생성 실패
         return self.success
 
+    def download_data(self, data: str, year: int) -> None:
+        try:
+            logging.info(f"{data} 다운로드 시도")
+            urlretrieve(
+                data,
+                f"{PATH}/{self.__folder_name_extraction()}/{year}/{self.__file_name_extraction(data)}",
+            )
+        except HTTPError as http_err:
+            logging.error(
+                f"다운로드를 할 수 없습니다 다음으로 이동합니다 --> {http_err}"
+            )
 
-class AllTaxiDataDownloadIn(FileFolderMakeUtil):
+
+class AllTaxiDataDownloadIn(__FileFolderMakeUtil):
     def __init__(self, taxi_type: str, start_year: int, end_year: int) -> None:
         """데이터 다운로드 클래스
 
-        시작 큐 -> 준비큐 -> 다운로드
+        시작 큐 -> 마지막 큐
 
         Args:
             taxi_type (str): 택시 유형
@@ -107,7 +120,8 @@ class AllTaxiDataDownloadIn(FileFolderMakeUtil):
         """
         super().__init__(taxi_type, start_year, end_year)
         self.bs = BeautifulSoup(gd().page(), "lxml")
-        self._ready_queue = deque()
+        self._start_queue = deque()
+        self._finish_queue = deque()
         if self.bs is None:
             return
 
@@ -126,28 +140,28 @@ class AllTaxiDataDownloadIn(FileFolderMakeUtil):
         """a 태그 뽑아내어 레디큐에 넣기"""
         for data in range(self.start_year, self.end_year + 1):
             year_links = self.year_href_collect(data)
-            self._ready_queue.append({data: a_tag_download_link(year_links)})
-
-    def __download_data(self, data: str, year: int) -> None:
-        try:
-            logging.info(f"{data} 다운로드 시도")
-            urlretrieve(
-                data,
-                f"{PATH}/{self.folder_name_extraction()}/{year}/{self.file_name_extraction(data)}",
-            )
-        except HTTPError as http_err:
-            logging.error(
-                f"다운로드를 할 수 없습니다 다음으로 이동합니다 --> {http_err}"
-            )
+            self._start_queue.append({data: a_tag_download_link(year_links)})
 
     def ready_for_down(self) -> None:
         """파일 다운로드하여 폴더에 저장"""
-        while self._ready_queue:
-            item: dict[int, list[str]] = self._ready_queue.popleft()
+        count = 0
+        while self._start_queue:
+            item: dict[int, list[str]] = self._start_queue.popleft()
             for year, links in item.items():
                 logging.info(f"{year} 접근 시도")
                 for data in links:
-                    self.__download_data(data, year)
+                    self.download_data(data, year)
+                    self._finish_queue.append(data)
+
+                    count += 1
+                    if count % 4 == 0:
+                        logging.info(f"3초 쉽니다")
+                        logging.info(f"현재 큐 크기 --> {len(self._finish_queue)}")
+                        time.sleep(3)
+
+                    if count % 30 == 0:
+                        logging.info(f"웹서버 보호를 위해 5분 쉽니다")
+                        time.sleep(300)
 
     def start(self) -> None:
         """크롤링 시작"""
@@ -181,10 +195,10 @@ if __name__ == "__main__":
     green = "Green Taxi Trip Records"
     for_hire = "For-Hire Vehicle Trip Records"
 
-    with ThreadPoolExecutor(4) as pool:
+    with ThreadPoolExecutor(2) as pool:
         futures = [
-            pool.submit(high_volume, high, 2019, 2024),
-            pool.submit(yello_volume, yellow, 2009, 2024),
+            # pool.submit(high_volume, high, 2019, 2024),
+            # pool.submit(yello_volume, yellow, 2009, 2024),
             pool.submit(green_volume, green, 2014, 2024),
             pool.submit(for_volume, for_hire, 2015, 2024),
         ]
