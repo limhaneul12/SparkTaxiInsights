@@ -7,12 +7,13 @@ import pathlib
 import logging
 from typing import Final
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import urllib3
+from urllib.error import HTTPError
 from urllib.request import urlretrieve
 from bs4 import BeautifulSoup
 from page_source import GoogleUtilityDriver as gd
-from concurrent.futures import ProcessPoolExecutor
 
 
 # 경로 설정
@@ -127,6 +128,18 @@ class AllTaxiDataDownloadIn(FileFolderMakeUtil):
             year_links = self.year_href_collect(data)
             self._ready_queue.append({data: a_tag_download_link(year_links)})
 
+    def __download_data(self, data: str, year: int) -> None:
+        try:
+            logging.info(f"{data} 다운로드 시도")
+            urlretrieve(
+                data,
+                f"{PATH}/{self.folder_name_extraction()}/{year}/{self.file_name_extraction(data)}",
+            )
+        except HTTPError as http_err:
+            logging.error(
+                f"다운로드를 할 수 없습니다 다음으로 이동합니다 --> {http_err}"
+            )
+
     def ready_for_down(self) -> None:
         """파일 다운로드하여 폴더에 저장"""
         while self._ready_queue:
@@ -134,35 +147,51 @@ class AllTaxiDataDownloadIn(FileFolderMakeUtil):
             for year, links in item.items():
                 logging.info(f"{year} 접근 시도")
                 for data in links:
-                    logging.info(f"{data} 다운로드 시도")
-                    urlretrieve(
-                        data,
-                        f"{PATH}/{self.folder_name_extraction()}/{year}/{self.file_name_extraction(data)}",
-                    )
+                    self.__download_data(data, year)
 
     def start(self) -> None:
         """크롤링 시작"""
         if self.create_folder():  # 폴더 생성 메서드의 반환값 확인
             self.__element_preprocessing()
             self.ready_for_down()
-            if not self._ready_queue:
-                exit(0)
         else:
             logging.error("폴더 생성 실패로 인해 작업을 중지합니다.")
 
 
-def volume(texi_type: str, start: int, end: int) -> None:
+def high_volume(texi_type: str, start: int, end: int) -> None:
+    return AllTaxiDataDownloadIn(texi_type, start, end).start()
+
+
+def yello_volume(texi_type: str, start: int, end: int) -> None:
+    return AllTaxiDataDownloadIn(texi_type, start, end).start()
+
+
+def green_volume(texi_type: str, start: int, end: int) -> None:
+    return AllTaxiDataDownloadIn(texi_type, start, end).start()
+
+
+def for_volume(texi_type: str, start: int, end: int) -> None:
     return AllTaxiDataDownloadIn(texi_type, start, end).start()
 
 
 if __name__ == "__main__":
+
     high = "High Volume For-Hire Vehicle Trip Records"
     yellow = "Yellow Taxi Trip Records"
     green = "Green Taxi Trip Records"
     for_hire = "For-Hire Vehicle Trip Records"
 
-    with ProcessPoolExecutor(4) as pool:
-        pool.submit(volume, high, 2019, 2024)
-        pool.submit(volume, yellow, 2009, 2024)
-        pool.submit(volume, green, 2014, 2024)
-        pool.submit(volume, for_hire, 2015, 2024)
+    with ThreadPoolExecutor(4) as pool:
+        futures = [
+            pool.submit(high_volume, high, 2019, 2024),
+            pool.submit(yello_volume, yellow, 2009, 2024),
+            pool.submit(green_volume, green, 2014, 2024),
+            pool.submit(for_volume, for_hire, 2015, 2024),
+        ]
+
+        # 모든 작업이 완료될 때까지 기다림
+        for future in as_completed(futures):
+            try:
+                future.result()
+            except Exception as e:
+                logging.error(f"오류를 발견하여 작업을 중단합니다 --> {e}")
