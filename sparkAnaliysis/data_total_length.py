@@ -14,7 +14,7 @@ def parquet_file_all(taxi_type: str) -> list[list[Path]]:
     return [location(data) for data in os.listdir(f"{os.getcwd()}/data/{taxi_type}")]
 
 
-def data_length(taxi_type: str):
+def data_length(taxi_type: str) -> int:
     # 데이터 크기를 계산할 변수를 초기화
     total_data_size = 0
 
@@ -31,10 +31,12 @@ def data_length(taxi_type: str):
 
 
 total = 0
-with ThreadPoolExecutor(2) as pool:
+with ThreadPoolExecutor(4) as pool:
     task = [
         pool.submit(data_length, "HighVolume"),
         pool.submit(data_length, "YellowTaxi"),
+        pool.submit(data_length, "For-HireVehicle"),
+        pool.submit(data_length, "GreenTaxi"),
     ]
 
     try:
