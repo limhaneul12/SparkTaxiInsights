@@ -142,7 +142,7 @@ class AllTaxiDataDownloadIn(__FileFolderMakeUtil):
             year_links = self.year_href_collect(data)
             self._start_queue.append({data: a_tag_download_link(year_links)})
 
-    def ready_for_down(self) -> None:
+    def __ready_for_down(self) -> None:
         """파일 다운로드하여 폴더에 저장"""
         count = 0
         while self._start_queue:
@@ -167,7 +167,7 @@ class AllTaxiDataDownloadIn(__FileFolderMakeUtil):
         """크롤링 시작"""
         if self.create_folder():  # 폴더 생성 메서드의 반환값 확인
             self.__element_preprocessing()
-            self.ready_for_down()
+            self.__ready_for_down()
         else:
             logging.error("폴더 생성 실패로 인해 작업을 중지합니다.")
 
