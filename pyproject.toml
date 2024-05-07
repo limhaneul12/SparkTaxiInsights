@@ -17,6 +17,7 @@ webdriver-manager = "^4.0.1"
 pyarrow = "^16.0.0"
 lxml = "^5.2.1"
 ipykernel = "^6.29.4"
+fastparquet = "^2024.2.0"
 
 
 [build-system]

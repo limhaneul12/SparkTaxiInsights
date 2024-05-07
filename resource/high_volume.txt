@@ -1,29 +1,4 @@
-('hvfhs_license_num', 'string')                                                 
-('dispatching_base_num', 'string')
-('originating_base_num', 'string')
-('request_datetime', 'timestamp')
-('on_scene_datetime', 'timestamp')
-('pickup_datetime', 'timestamp')
-('dropoff_datetime', 'timestamp')
-('PULocationID', 'bigint')
-('DOLocationID', 'bigint')
-('trip_miles', 'double')
-('trip_time', 'bigint')
-('base_passenger_fare', 'double')
-('tolls', 'double')
-('bcf', 'double')
-('sales_tax', 'double')
-('congestion_surcharge', 'double')
-('airport_fee', 'int')
-('tips', 'double')
-('driver_pay', 'double')
-('shared_request_flag', 'string')
-('shared_match_flag', 'string')
-('access_a_ride_flag', 'string')
-('wav_request_flag', 'string')
-('wav_match_flag', 'int')
-
-'hvfhs_license_num' :  해당 택시의 라이선스를 번호로 나누었으며 해당 번호는 다음 표에 있는 것으로 지칭한다 (2019년 기준 
+'hvfhs_license_num' :  해당 택시의 라이선스를 번호로 나누었으며 해당 번호는 다음 표에 있는 것으로 지칭한다 (2019년 기준)
 'dispatching_base_num' :  기본 라이센스 번호 
 'originating_base_num' : 여행 요청을 받은 베이스 기본 번호 
 'request_datetime' : 승객 픽업 요청 시각 

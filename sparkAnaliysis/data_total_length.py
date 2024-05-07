@@ -42,8 +42,9 @@ with ThreadPoolExecutor(4) as pool:
     try:
         for data in task:
             total += data.result()
-    except Exception:
-        pass
+    except Exception as e:
+        print(e)
 
 
+# 3616976480
 print(f"데이터의 크기는 다음과 같습니다 ==> {total}")
