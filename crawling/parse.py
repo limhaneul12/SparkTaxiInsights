@@ -172,19 +172,7 @@ class AllTaxiDataDownloadIn(__FileFolderMakeUtil):
             logging.error("폴더 생성 실패로 인해 작업을 중지합니다.")
 
 
-def high_volume(texi_type: str, start: int, end: int) -> None:
-    return AllTaxiDataDownloadIn(texi_type, start, end).start()
-
-
-def yello_volume(texi_type: str, start: int, end: int) -> None:
-    return AllTaxiDataDownloadIn(texi_type, start, end).start()
-
-
-def green_volume(texi_type: str, start: int, end: int) -> None:
-    return AllTaxiDataDownloadIn(texi_type, start, end).start()
-
-
-def for_volume(texi_type: str, start: int, end: int) -> None:
+def volume(texi_type: str, start: int, end: int) -> None:
     return AllTaxiDataDownloadIn(texi_type, start, end).start()
 
 
@@ -195,12 +183,12 @@ if __name__ == "__main__":
     green = "Green Taxi Trip Records"
     for_hire = "For-Hire Vehicle Trip Records"
 
-    with ThreadPoolExecutor(2) as pool:
+    with ThreadPoolExecutor(4) as pool:
         futures = [
-            # pool.submit(high_volume, high, 2019, 2024),
-            # pool.submit(yello_volume, yellow, 2009, 2024),
-            pool.submit(green_volume, green, 2014, 2024),
-            pool.submit(for_volume, for_hire, 2015, 2024),
+            pool.submit(volume, high, 2019, 2024),
+            pool.submit(volume, yellow, 2009, 2024),
+            pool.submit(volume, green, 2014, 2024),
+            pool.submit(volume, for_hire, 2015, 2024),
         ]
 
         # 모든 작업이 완료될 때까지 기다림
